@@ -39,14 +39,9 @@ Which should buy us roughly 2X compression.
 ### Residual Quanitzation
 Once the spiral is resampled, we will yet again treat it as a time signal and decimate by a factor of $M$. That is, we only keep every $M^{th}$ sample. Then, we attempt to reconstruct the datapoints in between using a polynomial interpolation, and compress the residual of this interpolation. 
 
-To formalize this, let the resampled signal be $$s[n]$$
-We decimate by $M$, giving us a new signal 
-$$d[n] = \begin{cases} s[n] & \text{if } n \mod M = 0 \\ 0 & \text{else}\end{cases}$$
-Now we use a polynomial interpolation function $f_{poly}$ to recover the missing points:
-$$ \hat{s}[n] = \begin{cases} s[n] & \text{if } n \mod M = 0 \\ f_{poly}(d) & \text{else}\end{cases}$$
-And finally we define the residual signal as 
-$$ r[n] = s[n] - \hat{s}[n]$$
-**We $r[n]$ using quanitzation**. The idea is that the residual signal $r[n]$ should be quite small, and have a distribution with a heavy spike at 0. 
+To formalize this:
+![](figures/LATEX.png)
+
 
 ### Lossless Cherry on Top
 The final step in our method is to add lossless compression to the resulting bitstream.

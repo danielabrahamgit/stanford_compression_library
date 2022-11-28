@@ -43,7 +43,7 @@ for i, comp_type in enumerate(compressors):
     recons[comp_type], tc_params[comp_type] = dl.recon_from_file(comp_type)
 
 # Plot with plotting util
-pu = plotting_util(recons, tc_params, dt=img_consts['dt'], figsize=(14, 10))
+pu = plotting_util(recons, tc_params, dt=img_consts['dt'], figsize=(14, 7))
 pu.recon_figure()
 # pu.gfactor_error_animation(file_gif)
 # pu.gfactor_error_figure()

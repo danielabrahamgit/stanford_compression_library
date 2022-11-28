@@ -1,6 +1,5 @@
 *.npy
 *.npz
-figures/
 
 
 *.mrc

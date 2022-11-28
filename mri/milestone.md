@@ -77,4 +77,4 @@ It is worth noting that we have not yet implimented any lossy compression, or an
 1. Impliment a more inteligent quanitzation algorithm. We are currently just doing a simple scalar quantization on the residuals
 2. Impliment lossy compressor on binary files. Or current compression scheme does not include any lossy compressors.
 3. Generate more tests on the entire pipeline. We currently have tested the *Resampling* part quite well, but need to more comprehensively test the whole pipeline.
-4. Benchmark on more data. We are limited to a pretty small dataset. We would like to try timing the reconstruction time on a 3D dataset to see if we get a siginificant boost in reconstruction time. This is 'icing on the cake', and will only be done if time permits.
+4. Benchmark on more data. We are limited to a pretty small dataset. We would like to try timing the reconstruction time on a 3D dataset to see if we get a siginificant boost in reconstruction time. This is 'icing on the cake', and will only be done if time permits.  

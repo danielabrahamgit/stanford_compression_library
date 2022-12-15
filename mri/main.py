@@ -23,6 +23,8 @@ try:
 except:
     pass
 
+PROJ_DIR = '/local_mount/space/tiger/1/users/abrahamd/stanford_compression_library/mri'
+
 # Use GPU
 device = sp.Device(0)
 print(device)
@@ -36,81 +38,141 @@ n = img_consts['n']
 compressors = [
     'Fully Sampled',
     'FS Noisy',
-    'Cubic',
     'TVLPF',
     'Zero Order'
 ]
 
-# Recon options
-params = {
-    'proxg': None, 
-    'lamda': 1e-14,
-    'accelerate': True,
-    'max_iter': 20
-}
 
-# More params
-rng = np.random.default_rng(100)
-# rng = np.random
-sigma = 1.0e-5
-# sigma = 0.005
-alpha = 1
-cutoff = 0.01
-dkmax = 1.5
+# Store results here
 recons = {}
-tc_params = {}
+comp_params = {}
 
-# Add Noise
-noise = rng.normal(0, sigma, ksp.shape) + rng.normal(0, sigma, ksp.shape) * 1j
-ksp_noisy = ksp + noise
+# Fix noise seed and std
+rng = np.random.default_rng(100)
+sigma = 1e-5
 
-# Reconstruct the compressed data
-tc = readout_compress(trj, dcf, alpha=alpha, cutoff=cutoff, dkmax=dkmax, device=device, interp_kind='linear')
+# TVLPF Params
+dkmax = 1.5
 
-for i, comp_type in enumerate(compressors):
+# Residual Quantization Params
+ksp_skip = 20
+bits_resid = 4
 
-    # compress to a file and get file size
-    filename = f'data/{comp_type}.mrc'
-    if comp_type == 'Fully Sampled':
-        tc.encode_file(filename, comp_type, ksp)
-        file_size = os.path.getsize(filename)
-        file_size_full = file_size
-    else:
-        tc.encode_file(filename, comp_type, ksp_noisy)
-        file_size = os.path.getsize(filename)
+# Trajectory Compression Params
+trj_start = 300
+trj_skip  = 15
 
-    # Decode compressed file
-    ksp_tc, trj_tc, dcf_tc = tc.decode_file(filename, mps.shape[1:])
+# Sweep a particular param
+params = [0]
 
-    # Compression ratio
-    Rt = file_size_full / file_size
+for k, param in enumerate(params):
 
-    # Reconstruct compressed data
-    recon_tc = mr.app.SenseRecon(
-        ksp_tc, 
-        mps, 
-        coord=trj_tc, 
-        weights=dcf_tc, 
-        device=device,
-        lamda=params['lamda'],
-        max_iter=params['max_iter'],
-        show_pbar=False).run().get()
-    
-    # Parameters that define this time compression
-    tc_param = np.array([alpha, cutoff, dkmax, Rt])
+    # Set param
+    # trj_skip = param
 
-    # Save to dict
-    if comp_type in recons:
-        recons[comp_type].append(recon_tc)
-    else:
-        recons[comp_type] = [recon_tc]
-    if comp_type in tc_params:
-        tc_params[comp_type].append(tc_param)
-    else:
-        tc_params[comp_type] = [tc_param]
+    # Add Noise
+    noise = rng.normal(0, sigma, ksp.shape) + rng.normal(0, sigma, ksp.shape) * 1j
+    ksp_noisy = ksp + noise
+
+    # Reconstruct the compressed data
+    tc = readout_compress(trj, dcf, alpha=1, cutoff=0.03, dkmax=dkmax, device=device)
+
+    for i, comp_type in enumerate(compressors):
+
+        # Name of file depends on compressor type
+        filename = f'{PROJ_DIR}/data/{comp_type}.mrc'
+
+        # No Compression No Noise
+        if comp_type == 'Fully Sampled':
+            if k ==0:
+                tc.encode_file(
+                    filename, 
+                    comp_type, 
+                    ksp, 
+                    trj_start=0, 
+                    trj_skip=1,
+                    ksp_skip=1,
+                    bits_resid=0,
+                    use_lossless=False)
+            file_size = os.path.getsize(filename)
+            file_size_full = file_size
+        # No Compression + Noise
+        elif comp_type == 'FS Noisy':
+            if k == 0:
+                tc.encode_file(
+                    filename, 
+                    comp_type, 
+                    ksp_noisy, 
+                    trj_start=0, 
+                    trj_skip=1,
+                    ksp_skip=1,
+                    bits_resid=0,
+                    use_lossless=False)
+            file_size = os.path.getsize(filename)
+        # Compression + Noise
+        else:
+            tc.encode_file(
+                filename, 
+                comp_type, 
+                ksp_noisy, 
+                trj_start=trj_start, 
+                trj_skip=trj_skip,
+                ksp_skip=ksp_skip,
+                bits_resid=bits_resid,
+                use_lossless=True)
+            file_size = os.path.getsize(filename)
+
+        # Reconstruct compressed data
+        if comp_type != 'Fully Sampled' and comp_type != 'FS Noisy':
+            # Decode compressed file
+            ksp_tc, trj_tc, dcf_tc = tc.decode_file(filename)
+            recon_tc = mr.app.SenseRecon(
+                ksp_tc, 
+                mps, 
+                coord=trj_tc, 
+                weights=dcf_tc, 
+                device=device,
+                lamda=0,
+                max_iter=10,
+                show_pbar=False).run().get()
+        else:
+            if k == 0:
+                # Decode compressed file
+                ksp_tc, trj_tc, dcf_tc = tc.decode_file(filename)
+                recon_tc = mr.app.SenseRecon(
+                ksp_tc, 
+                mps, 
+                coord=trj_tc, 
+                weights=dcf_tc, 
+                device=device,
+                lamda=0,
+                max_iter=10,
+                show_pbar=False).run().get()
+            else:
+                recon_tc = recons[comp_type][0]
+        
+        # Parameters of this compressor
+        comp_param = np.array([
+            dkmax, 
+            ksp_skip, 
+            bits_resid, 
+            trj_skip, 
+            trj_start, 
+            file_size,
+            file_size_full / file_size])
+
+        # Save to dict
+        if comp_type in recons:
+            recons[comp_type].append(recon_tc)
+        else:
+            recons[comp_type] = [recon_tc]
+        if comp_type in comp_params:
+            comp_params[comp_type].append(comp_param)
+        else:
+            comp_params[comp_type] = [comp_param]
 
 # Save to files
 for comp_type in compressors:
     recon_array = np.array(recons[comp_type])
-    tc_param_array = np.array(tc_params[comp_type])
+    tc_param_array = np.array(comp_params[comp_type])
     dl.recon_to_file(recon_array, tc_param_array, comp_type)

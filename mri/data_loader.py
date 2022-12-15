@@ -4,7 +4,8 @@ from pathlib import Path
 
 # PROJ_DIR = '/local_mount/space/tiger/1/users/abrahamd/mr_time_compression'
 # PROJ_DIR = str(Path.home()) + '/devel/mr_time_compression'
-PROJ_DIR = os.getcwd()
+# PROJ_DIR = os.getcwd()
+PROJ_DIR = '/local_mount/space/tiger/1/users/abrahamd/stanford_compression_library/mri'
 
 class data_loader:
 

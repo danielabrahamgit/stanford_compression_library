@@ -4,7 +4,7 @@ In addition, you will need the sigpy library to reconstruct MRI images. The inst
 https://sigpy.readthedocs.io/en/latest/index.html
 
 ## Reproducibility
-To reproduce the results show in the report below, run:
+To reproduce the final image shown in the report below, run:
 ```
 python main.py && python generate_plots.py
 ```

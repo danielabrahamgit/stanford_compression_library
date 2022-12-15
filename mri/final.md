@@ -54,8 +54,10 @@ Quantization of the residual signal $r[n]$ is done using a K-means scalar quanti
 ### Trajectory Compression
 We want to compress the trajectory data, which is the parametric equations describing the coordinates of the time series spiral. In its raw form, this is what the trajectory looks like:
 ![](figures/trj.png)
+
 To simplify things, let us convert this to magnitude ($R$) phase ($\phi$) data:
 ![](figures/magphase.png)
+
 We compress this magnitude phase data interpolation. We keep the first ~100 points, since that part changes more than the rest of the signal. Then, we skip every 100 points, and interpolate the missing values with a cubic interpolation. This works really well since the signal is so predictable.
  
 ### Lossless Cherry on Top
